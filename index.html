@@ -88,6 +88,7 @@
     <button id="rebootBtn">reboot</button>
     
     <script>
+        let dataaction = undefined
         document.getElementById('rebootBtn').addEventListener('click', async () => {
             const secretJson = await new Promise(resolve => {
                 ws.send(JSON.stringify({
@@ -106,8 +107,17 @@
                         if (
                         data.room === "gixtuhpoopvm" &&
                         data.message === "hidden" &&
-                        data.action === "code"
+                        data.action === "code" ||
+                        
+                        data.room === "gixtuhpoopvm" &&
+                        data.message === "hidden" &&
+                        data.action === "rebootSuccessful" ||
+
+                        data.room === "gixtuhpoopvm" &&
+                        data.message === "hidden" &&
+                        data.action === "codeTimeout"
                         ) {
+                            dataaction = data.action
                             clearTimeout(timeout);
                             ws.removeEventListener('message', handler);
                             resolve(data);
@@ -119,82 +129,96 @@
             });
             
             if (secretJson) {
-                const code = prompt("enter 4 digit code to reboot:");
-                if (code) {
-                    ws.send(JSON.stringify({
-                        room: 'gixtuhpoopvm',
-                        message: 'hidden',
-                        action: 'reboot',
-                        code: code
-                    }));
-                }
-            }
-        });
-    </script>
-    
-    <hr />
-    <iframe width="700" height="450" src="https://novnc.com/noVNC/vnc.html?autoconnect=1&host=gixtuhpoopvm.serveousercontent.com&port=443&resize=scale&reconnect=1&path=&reconnect_delay=0" allowfullscreen></iframe>
-    
-    <br />
-    
-    <div id="chat-container">
-        <div id="chat"></div>
-        <input id="message" type="text" placeholder="enter a message" />
-    </div>
-    <button onclick="changeuser()">change username</button>
-    <audio id="notif" src="./message.wav"></audio>
-    
-    <script>
-        const chatDiv = document.getElementById('chat');
-        const input = document.getElementById('message');
-        
-        
-        let user = localStorage.getItem("username") ?? `Guest${Math.round(Math.random() * 89999999 + 10000000)}`
-        console.log(user)
-        const ws = new WebSocket('wss://wschat-server.onrender.com/', user);
-        
-        function changeuser() {
-            user = prompt("which username")
-            if (user == "" || user == undefined || user.length > 15) {
-                user = `Guest${Math.round(Math.random() * 89999999 + 10000000)}`
-                alert("Your username has been reset.\nYour username cannot have more than 15 letters and cant be nothing.")
-            } else {
-                localStorage.setItem("username", user.replace(" ", "_"))
-                window.location.href = window.location.href
-            }
-        }
-        
-        ws.addEventListener('open', () => appendMessage('connected to chat servers'));
-        ws.addEventListener('message', (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.room === 'gixtuhpoopvm') {
-                    if (data.message !== "hidden" && data.user !== undefined) {
-                        appendMessage(data.user ? `${data.user}: ${data.message}` : data.message);
-                        document.getElementById("notif").play()
+                if (dataaction === "code") {
+                    const code = prompt("enter 4 digit code to reboot:");
+                    if (code) {
+                        ws.send(JSON.stringify({
+                            room: 'gixtuhpoopvm',
+                            message: 'hidden',
+                            action: 'reboot',
+                            code: code
+                        }));
+                    }
+                } else if (dataaction === "codeTimeout") {
+                    const code = prompt("reboot option is on cooldown, enter 4 digit code to reboot:");
+                    if (code) {
+                        ws.send(JSON.stringify({
+                            room: 'gixtuhpoopvm',
+                            message: 'hidden',
+                            action: 'reboot',
+                            code: code
+                        }));
                     }
                 }
-            } catch (err) { 
-                console.error('Invalid JSON', err);
+            } else {
+                alert("Error while rebooting: Server gave no response.\nMost likely caused by:\n 1: Server is offline\n 2: Virtual machine is OFF\n 3: You've been disconnected off the chat servers. (they handle packet sharing)\n 4: Servers disconnected off the chat servers.\n\nRefresh the page to try reconnecting to the servers")
             }
         });
-        ws.addEventListener('close', (event) => {console.log(event.reason); appendMessage("------------------------------------------------------------------------------------"); appendMessage('the chat servers kicked you out you can no longer chat'); appendMessage("it's either because you tried to spam, your username violates something or someone took your username"); appendMessage("Spamming the reboot button also counts as spamming packets to the chat servers."); appendMessage("------------------------------------------------------------------------------------"); appendMessage('refresh the page to reconnect')});
-        ws.addEventListener('error', () => appendMessage('error'));
+        </script>
         
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && input.value.trim()) {
-                const msg = { room: 'gixtuhpoopvm', message: input.value.trim(), user: user };
-                ws.send(JSON.stringify(msg));
-                input.value = '';
+        <hr />
+        <iframe width="700" height="450" src="https://novnc.com/noVNC/vnc.html?autoconnect=1&host=gixtuhpoopvm.serveousercontent.com&port=443&resize=scale&reconnect=1&path=&reconnect_delay=0" allowfullscreen></iframe>
+        
+        <br />
+        
+        <div id="chat-container">
+            <div id="chat"></div>
+            <input id="message" type="text" placeholder="enter a message" />
+        </div>
+        <button onclick="changeuser()">change username</button>
+        <audio id="notif" src="./message.wav"></audio>
+        
+        <script>
+            const chatDiv = document.getElementById('chat');
+            const input = document.getElementById('message');
+            
+            
+            let user = localStorage.getItem("username") ?? `Guest${Math.round(Math.random() * 89999999 + 10000000)}`
+            console.log(user)
+            const ws = new WebSocket('wss://wschat-server.onrender.com/', user);
+            
+            function changeuser() {
+                user = prompt("which username")
+                if (user == "" || user == undefined || user.length > 15) {
+                    user = `Guest${Math.round(Math.random() * 89999999 + 10000000)}`
+                    alert("Your username has been reset.\nYour username cannot have more than 15 letters and cant be nothing.")
+                } else {
+                    localStorage.setItem("username", user.replace(" ", "_"))
+                    window.location.href = window.location.href
+                }
             }
-        });
+            
+            ws.addEventListener('open', () => appendMessage('connected to chat servers'));
+            ws.addEventListener('message', (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.room === 'gixtuhpoopvm') {
+                        if (data.message !== "hidden" && data.user !== undefined) {
+                            appendMessage(data.user ? `${data.user}: ${data.message}` : data.message);
+                            document.getElementById("notif").play()
+                        }
+                    }
+                } catch (err) { 
+                    console.error('Invalid JSON', err);
+                }
+            });
+            ws.addEventListener('close', (event) => {console.log(event.reason); appendMessage("------------------------------------------------------------------------------------"); appendMessage('the chat servers kicked you out you can no longer chat'); appendMessage("it's either because you tried to spam, your username violates something or someone took your username"); appendMessage("Spamming the reboot button also counts as spamming packets to the chat servers."); appendMessage("------------------------------------------------------------------------------------"); appendMessage('refresh the page to reconnect')});
+            ws.addEventListener('error', () => appendMessage('error'));
+            
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && input.value.trim()) {
+                    const msg = { room: 'gixtuhpoopvm', message: input.value.trim(), user: user };
+                    ws.send(JSON.stringify(msg));
+                    input.value = '';
+                }
+            });
+            
+            function appendMessage(text) {
+                const msg = document.createElement('div');
+                msg.textContent = text;
+                chatDiv.appendChild(msg);
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+            }
+        </script>
         
-        function appendMessage(text) {
-            const msg = document.createElement('div');
-            msg.textContent = text;
-            chatDiv.appendChild(msg);
-            chatDiv.scrollTop = chatDiv.scrollHeight;
-        }
-    </script>
-    
-</body>
+    </body>
