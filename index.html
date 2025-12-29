@@ -24,14 +24,36 @@
         #chat {
             width: 90%;
             height: 400px;
-            border: 2px solid #333;
+            border: none;
             padding: 10px;
-            overflow-y: auto;
+            overflow-y: scroll;
             background-color: #111;
-            color: #eee;
+            color: white;
             border-radius: 8px;
+            line-height: 3;
         }
-        
+        #chat > div:hover {
+            display: flex;
+            background-color: #303030;
+            border-radius: 20px;
+            padding-left: 20px;
+            transition-duration: 0.3s;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-60px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        #chat > div {
+            display: flex;
+            transition-duration: 1s;
+            animation: slideIn 0.5s;
+        }
         #message {
             width: 70%;
             padding: 8px;
@@ -45,11 +67,11 @@
             background-color: rgb(102, 102, 102);
             color: rgb(204, 204, 204);
             padding: 15px;
-            transition-duration: 0.3s;
+            transition-duration: 1s;
         }
         button:hover {
             background-color: rgb(78, 78, 78);
-            transition-duration: 0.2s;
+            transition-duration: 0.3s;
         }
         button:active {
             background-color: rgb(44, 44, 44)
@@ -63,10 +85,56 @@
     <h1>gixtuh's poop vm</h1>
     <p>a really great vnc with a virtual machine</p> <br />
     <button onclick="window.location.href = 'https://novnc.com/noVNC/vnc.html?autoconnect=1&host=gixtuhpoopvm.serveousercontent.com&port=443&resize=scale&reconnect=1&path=&reconnect_delay=0'">embed</button>
-    <button onclick="ws.send(JSON.stringify({'room': 'gixtuhpoopvm', 'message':'hidden', 'action': 'reboot', 'code': prompt('enter 4 digit code to reboot: ')}))">reboot</button>
+    <button id="rebootBtn">reboot</button>
+    
+    <script>
+        document.getElementById('rebootBtn').addEventListener('click', async () => {
+            const secretJson = await new Promise(resolve => {
+                ws.send(JSON.stringify({
+                    room: 'gixtuhpoopvm',
+                    message: 'hidden',
+                    action: 'reboot'
+                }));
+                const timeout = setTimeout(() => {
+                    ws.removeEventListener('message', handler);
+                    resolve(null); // timeout
+                }, 1000);
+                
+                const handler = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (
+                        data.room === "gixtuhpoopvm" &&
+                        data.message === "hidden" &&
+                        data.action === "code"
+                        ) {
+                            clearTimeout(timeout);
+                            ws.removeEventListener('message', handler);
+                            resolve(data);
+                        }
+                    } catch (err) {}
+                };
+                
+                ws.addEventListener('message', handler);
+            });
+            
+            if (secretJson) {
+                const code = prompt("enter 4 digit code to reboot:");
+                if (code) {
+                    ws.send(JSON.stringify({
+                        room: 'gixtuhpoopvm',
+                        message: 'hidden',
+                        action: 'reboot',
+                        code: code
+                    }));
+                }
+            }
+        });
+    </script>
+    
     <hr />
     <iframe width="700" height="450" src="https://novnc.com/noVNC/vnc.html?autoconnect=1&host=gixtuhpoopvm.serveousercontent.com&port=443&resize=scale&reconnect=1&path=&reconnect_delay=0" allowfullscreen></iframe>
-
+    
     <br />
     
     <div id="chat-container">
@@ -80,11 +148,11 @@
         const chatDiv = document.getElementById('chat');
         const input = document.getElementById('message');
         
-
+        
         let user = localStorage.getItem("username") ?? `Guest${Math.round(Math.random() * 89999999 + 10000000)}`
         console.log(user)
         const ws = new WebSocket('wss://wschat-server.onrender.com/', user);
-
+        
         function changeuser() {
             user = prompt("which username")
             if (user == "" || user == undefined || user.length > 15) {
@@ -96,11 +164,7 @@
             }
         }
         
-        ws.addEventListener('open', () => {appendMessage('connected');
-            setInterval(() => {
-                ws.send("1234567890")
-            }, 5000);
-        });
+        ws.addEventListener('open', () => appendMessage('connected'));
         ws.addEventListener('message', (event) => {
             try {
                 const data = JSON.parse(event.data);
@@ -114,7 +178,7 @@
                 console.error('Invalid JSON', err);
             }
         });
-        ws.addEventListener('close', () => {appendMessage('the chat servers kicked you out you can no longer chat'); appendMessage('refresh the page to reconnect'); appendMessage("it's either because you tried to spam, your username violates something or someone took your username")});
+        ws.addEventListener('close', (event) => {console.log(event.reason); appendMessage("------------------------------------------------------------------------------------"); appendMessage('the chat servers kicked you out you can no longer chat'); appendMessage("it's either because you tried to spam, your username violates something or someone took your username"); appendMessage("Spamming the reboot button also counts as spamming packets to the chat servers."); appendMessage("------------------------------------------------------------------------------------"); appendMessage('refresh the page to reconnect')});
         ws.addEventListener('error', () => appendMessage('error'));
         
         input.addEventListener('keypress', (e) => {
