@@ -157,7 +157,7 @@
         </script>
         
         <hr />
-        <iframe width="700" height="450" src="https://novnc.com/noVNC/vnc.html?autoconnect=1&host=gixtuhpoopvm.serveousercontent.com&port=443&resize=scale&reconnect=1&path=&reconnect_delay=0" allowfullscreen></iframe>
+        <iframe id="iframething" width="700" height="450" src="https://novnc.com/noVNC/vnc.html?autoconnect=1&host=gixtuhpoopvm.serveousercontent.com&port=443&resize=scale&reconnect=1&path=&reconnect_delay=0" allowfullscreen></iframe>
         
         <br />
         
@@ -175,7 +175,7 @@
             
             let user = localStorage.getItem("username") ?? `Guest${Math.round(Math.random() * 89999999 + 10000000)}`
             console.log(user)
-            const ws = new WebSocket('wss://gixtuhpoopvm.loca.lt', user);
+            const ws = new WebSocket('wss://gixtuhpoopvm-chat.serveousercontent.com', user);
             
             function changeuser() {
                 user = prompt("which username")
@@ -204,6 +204,7 @@
             });
             ws.addEventListener('close', (event) => {
                 console.log(event.reason);
+		console.log(event.code)
                 if (event.reason !== "") {
                     appendMessage("------------------------------------------------------------------------------------");
                     appendMessage(`sadly you've been kicked ou- ${event.reason}`)
@@ -211,6 +212,7 @@
                     appendMessage("------------------------------------------------------------------------------------");
                     appendMessage(`sadly you've been kicked out because the servers are offline :(`)
                 }
+                document.getElementById("iframething").src = "./banned.html"
             });
             ws.addEventListener('error', () => appendMessage('error'));
             
