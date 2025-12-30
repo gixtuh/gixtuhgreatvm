@@ -175,7 +175,7 @@
             
             let user = localStorage.getItem("username") ?? `Guest${Math.round(Math.random() * 89999999 + 10000000)}`
             console.log(user)
-            const ws = new WebSocket('wss://wschat-server.onrender.com/', user);
+            const ws = new WebSocket('wss://gixtuhpoopvm.loca.lt', user);
             
             function changeuser() {
                 user = prompt("which username")
@@ -202,7 +202,16 @@
                     console.error('Invalid JSON', err);
                 }
             });
-            ws.addEventListener('close', (event) => {console.log(event.reason); appendMessage("------------------------------------------------------------------------------------"); appendMessage('the chat servers kicked you out you can no longer chat'); appendMessage("it's either because you tried to spam, your username violates something or someone took your username"); appendMessage("Spamming the reboot button also counts as spamming packets to the chat servers."); appendMessage("------------------------------------------------------------------------------------"); appendMessage('refresh the page to reconnect')});
+            ws.addEventListener('close', (event) => {
+                console.log(event.reason);
+                if (event.reason !== "") {
+                    appendMessage("------------------------------------------------------------------------------------");
+                    appendMessage(`sadly you've been kicked ou- ${event.reason}`)
+                } else {
+                    appendMessage("------------------------------------------------------------------------------------");
+                    appendMessage(`sadly you've been kicked out because the servers are offline :(`)
+                }
+            });
             ws.addEventListener('error', () => appendMessage('error'));
             
             input.addEventListener('keypress', (e) => {
